@@ -1,15 +1,8 @@
-from dataclasses import dataclass
-import sys
 from typing import Optional
 
+from utils import Node
+
 INFINITY = float("inf")
-
-
-@dataclass
-class Node:
-    number: int
-    edges: list[tuple[int, int]]
-
 
 class DijkstraHeap:
     dist_heap: list[int]
@@ -64,6 +57,7 @@ class DijkstraHeap:
             i = parent
 
     def pop_heap(self) -> tuple[int, int]:
+        """Returns the top node and dist as a tuple: (node, dist)"""
         last_i = len(self.dist_heap) - 1
         self.swap(last_i, 0)
 
@@ -72,14 +66,14 @@ class DijkstraHeap:
         self.in_heap[node] = False
 
         self.fix_heap(0)
-        return dist, node
+        return node, dist
 
     def __len__(self) -> int:
         return len(self.dist_heap)
 
 
 def run_dijkstra(
-    origin: int, nodes: list[Node], loading_bar: bool = False
+    nodes: list[Node], origin: int, destination: Optional[int] = None, loading_bar: bool = False
 ) -> tuple[list[float], list[Optional[int]]]:
     number_of_nodes = len(nodes)
     best_distances: list[float | int] = [INFINITY] * number_of_nodes
@@ -101,9 +95,9 @@ def run_dijkstra(
         if len(heap) == 0:
             break
 
-        current_dist, current_node = heap.pop_heap()
+        current_node, current_dist = heap.pop_heap()
 
-        for cost, target in nodes[current_node].edges:
+        for target, cost in nodes[current_node].edges:
             # No need to account for finished nodes, the cost will always be greater than current best.
             if visited[target]:
                 continue
@@ -112,5 +106,8 @@ def run_dijkstra(
                 best_distances[target] = new_dist
                 previous[target] = current_node
                 heap.update_entry(target, new_dist)
+        
+        if destination is not None and destination == current_node:
+            break
 
     return best_distances, previous
