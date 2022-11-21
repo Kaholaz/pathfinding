@@ -1,10 +1,21 @@
-from pathfinding import run_dijkstra
+from pathfinding import run_alt
 from file_handling import read_complete
+from alt_preprocess import (
+    ICELAND_LANDMARKS,
+    load_preprocess,
+    preprocess_and_save,
+    SCANDINAVIA_LANDMARKS,
+)
 from utils import hour_min_sec_to_sec as seconds
 
 
-def general_test(nodes, origin, destination, target_path_length, target_seconds):
-    distances, prev = run_dijkstra(nodes, origin, destination, True)
+def general_test(
+    nodes, origin: int, destination: int, target_path_length: int, target_seconds: int
+):
+    global from_landmarks, to_landmarks
+    distances, prev = run_alt(
+        nodes, origin, to_landmarks, from_landmarks, destination, loading_bar=True
+    )
 
     path_length, current = 2, destination
     while (current := prev[current]) != origin:
@@ -48,7 +59,16 @@ def test_tampere_stavanger():
 
 
 if __name__ == "__main__":
-    nodes = read_complete("noder.txt", "kanter.txt", loading_bar=True)
+    global to_landmarks, from_landmarks
+
+    nodes, to_landmarks, from_landmarks = preprocess_and_save(
+        "noder.txt",
+        "kanter.txt",
+        "preprocess.pickle",
+        landmarks=SCANDINAVIA_LANDMARKS,
+        loading_bar=True,
+    )
+    # nodes, to_landmarks, from_landmarks = load_preprocess("preprocess.pickle")
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):
