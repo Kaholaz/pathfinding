@@ -6,6 +6,31 @@ class Node:
     number: int
     edges: list[tuple[int, int]]  # node, cost
     pos: tuple[float, float]
+    type: int = 0
+
+
+def is_placename(node: Node) -> bool:
+    return bool(node.type & 1)
+
+
+def is_gas_station(node: Node) -> bool:
+    return bool(node.type & 2)
+
+
+def is_charging_station(node: Node) -> bool:
+    return bool(node.type & 4)
+
+
+def is_eating_place(node: Node) -> bool:
+    return bool(node.type & 8)
+
+
+def is_drinking_place(node: Node) -> bool:
+    return bool(node.type & 16)
+
+
+def is_sleeping_place(node: Node) -> bool:
+    return bool(node.type & 32)
 
 
 def hour_min_sec_to_cs(hours: int, minutes: int, seconds: int):
