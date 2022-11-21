@@ -13,16 +13,14 @@ def general_test(
     nodes, origin: int, destination: int, target_path_length: int, target_seconds: int
 ):
     global from_landmarks, to_landmarks
-    distances, prev = run_alt(
+    distance, prev = run_alt(
         nodes, origin, to_landmarks, from_landmarks, destination, loading_bar=True
     )
 
     path_length, current = 2, destination
-    while (current := prev[current]) != origin:
+    while (current := prev[current] or origin) != origin:
         path_length += 1
-    assert (
-        distances[destination] // 100 == target_seconds
-    ), f"{distances[destination]//100=}, {target_seconds}"
+    assert distance // 100 == target_seconds, f"{distance//100=}, {target_seconds}"
     assert path_length == target_path_length, f"{path_length=}, {target_path_length=}"
 
 
@@ -62,9 +60,10 @@ if __name__ == "__main__":
     global to_landmarks, from_landmarks
 
     nodes, to_landmarks, from_landmarks = preprocess_and_save(
-        "noder.txt",
-        "kanter.txt",
-        "preprocess.pickle",
+        node_file="noder.txt",
+        edges_file="kanter.txt",
+        place_file="interessepkt.txt",
+        preprocess_file="preprocess.pickle",
         landmarks=SCANDINAVIA_LANDMARKS,
         loading_bar=True,
     )

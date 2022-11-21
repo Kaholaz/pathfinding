@@ -32,7 +32,12 @@ def test_100000_50():
 
 
 if __name__ == "__main__":
-    nodes = read_complete("island_noder.txt", "island_kanter.txt", loading_bar=True)
+    nodes = read_complete(
+        "island_noder.txt",
+        "island_kanter.txt",
+        "island_interessepkt.txt",
+        loading_bar=True,
+    )
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):

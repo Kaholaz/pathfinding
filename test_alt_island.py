@@ -1,3 +1,4 @@
+from typing import Optional
 from pathfinding import run_alt
 from file_handling import read_complete
 from alt_preprocess import (
@@ -18,9 +19,9 @@ def general_test(
     )
 
     path_length, current = 2, destination
-    while (current := prev[current]) != origin:
+    while (current := prev[current] or origin) != origin:
         path_length += 1
-    assert distance // 100 == target_seconds, f"{distance/100=}, {target_seconds}"
+    assert distance // 100 == target_seconds, f"{distance//100=}, {target_seconds}"
     assert path_length == target_path_length, f"{path_length=}, {target_path_length=}"
 
 
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     # nodes, to_landmarks, from_landmarks = preprocess_and_save(
     #     "island_noder.txt",
     #     "island_kanter.txt",
+    #     "island_interessepkt.txt",
     #     "island_preprocess.pickle",
     #     landmarks=ICELAND_LANDMARKS,
     #     loading_bar=True,

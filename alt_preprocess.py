@@ -20,7 +20,7 @@ SCANDINAVIA_LANDMARKS = {
 
 def calculate_distances_from_landmark(
     nodes: list[Node], landmark: int, landmark_name: str, loading_bar: bool = False
-) -> list[int]:
+) -> list[float | int]:
     distances, prev = run_dijkstra(
         nodes,
         landmark,
@@ -32,7 +32,7 @@ def calculate_distances_from_landmark(
 
 def distances_from_landmarks(
     nodes: list[Node], landmarks: dict[int, str], loading_bar: bool = False
-) -> list[list[int]]:
+) -> list[list[float | int]]:
     return [
         calculate_distances_from_landmark(
             nodes, landmark, landmark_name, loading_bar=loading_bar
@@ -42,10 +42,14 @@ def distances_from_landmarks(
 
 
 def preprocess(
-    node_file: str, edges_file: str, landmarks: list[int], loading_bar: bool = False
-) -> tuple[list[list[int]], list[list[int]]]:
+    node_file: str,
+    edges_file: str,
+    place_file: str,
+    landmarks: dict[int, str],
+    loading_bar: bool = False,
+) -> tuple[list[Node], list[list[float | int]], list[list[float | int]]]:
     reverse_nodes = read_complete(
-        node_file, edges_file, reverse=True, loading_bar=loading_bar
+        node_file, edges_file, place_file, reverse=True, loading_bar=loading_bar
     )
 
     print("---Reversed nodes---")
@@ -53,7 +57,7 @@ def preprocess(
     del reverse_nodes
 
     print("---Forwards nodes---")
-    nodes = read_complete(node_file, edges_file, loading_bar=loading_bar)
+    nodes = read_complete(node_file, edges_file, place_file, loading_bar=loading_bar)
     from_landmarks = distances_from_landmarks(nodes, landmarks, loading_bar)
 
     return nodes, to_landmarks, from_landmarks
@@ -61,8 +65,8 @@ def preprocess(
 
 def save_preprocess(
     nodes: list[Node],
-    to_landmarks: list[list[int]],
-    from_landmarks: list[list[int]],
+    to_landmarks: list[list[float | int]],
+    from_landmarks: list[list[float | int]],
     preprocess_file_name: str,
 ):
     with open(preprocess_file_name, "wb") as f:
@@ -80,18 +84,25 @@ def load_preprocess(
 def preprocess_and_save(
     node_file: str,
     edges_file: str,
+    place_file: str,
     preprocess_file: str,
     landmarks: dict[int, str],
-    loading_bar,
+    loading_bar: bool,
 ) -> tuple[list[Node], list[list[int]], list[list[int]]]:
-    return save_preprocess(
-        *preprocess(node_file, edges_file, landmarks, loading_bar), preprocess_file
+    nodes, to_landmarks, from_landmarks = preprocess(
+        node_file, edges_file, place_file, landmarks, loading_bar
     )
+    return save_preprocess(nodes, to_landmarks, from_landmarks, preprocess_file)
 
 
 if __name__ == "__main__":
     pre_result = preprocess_and_save(
-        "noder.txt", "kanter.txt", "preprocess.pickle", SCANDINAVIA_LANDMARKS, True
+        "noder.txt",
+        "kanter.txt",
+        "interessepkt.txt",
+        "preprocess.pickle",
+        landmarks=SCANDINAVIA_LANDMARKS,
+        loading_bar=True,
     )
     print("Unpickeling")
     load_preprocess("island_preprocess.pickle")
