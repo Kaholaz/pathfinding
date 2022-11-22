@@ -36,12 +36,12 @@ def print_benchmark_results(
         time_string = "Unreachable"
     print(
         f"""
-{"origin":>15}| {origin_name:>30}
-{"destination":>15}| {destination_name:>30}
-{"nodes in path":>15}| {number_of_nodes:>30}
-{"nodes evaluated":>15}| {number_of_nodes_evaluated:>30}
-{"duration":>15}| {time_string:>30}
-{"exec time":>15}| {str(exec_time) + 's':>30}
+{"origin":>15} {origin_name:>20}
+{"destination":>15} {destination_name:>20}
+{"nodes in path":>15} {number_of_nodes:>20}
+{"nodes evaluated":>15} {number_of_nodes_evaluated:>20}
+{"duration":>15} {time_string:>20}
+{"exec time":>15} {str(exec_time) + 's':>20}
 """
     )
 
