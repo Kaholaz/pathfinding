@@ -1,6 +1,7 @@
 from alt_preprocess import load_preprocess
 from pathfinding import PathFinder
 from utils import Node, cs_to_hour_min_sec
+import utils
 from file_handling import read_complete
 
 from timeit import default_timer as timer
@@ -12,9 +13,12 @@ DESTINATIONS = {
     "Trondheim": 7425499,
     "Trondheim lufthavn, Værnes": 7172108,
     "Trondheim torg": 4546048,
-    "Hemseda": 3509663,
+    "Hemsedal": 3509663,
     "Tampere": 232073,
     "Stavanger": 4247796,
+    "Kårvåg": 3292784,
+    "Gjemnes": 7352330,
+    "Ålesund": 2518780,
 }
 
 
@@ -47,11 +51,11 @@ def benchmark_dijkstra(pathfinder: PathFinder, origin_name: str, destination_nam
     destination = DESTINATIONS[destination_name]
 
     start = timer()
-    distances, path = pathfinder.run_dijkstra(origin, destination)
+    distance, path = pathfinder.run_dijkstra(origin, destination)
     end = timer()
 
     print_benchmark_results(
-        distances[destination],
+        distance,
         len(path),
         pathfinder.considered_nodes,
         origin_name,
@@ -61,7 +65,7 @@ def benchmark_dijkstra(pathfinder: PathFinder, origin_name: str, destination_nam
 
 
 def benchmark_alt(
-    nodes: list[Node],
+    pathfinder: PathFinder,
     origin_name: str,
     destination_name: str,
 ):
@@ -82,6 +86,12 @@ def benchmark_alt(
     )
 
 
+def write_coordinates(nodes: list[Node], file_path: str):
+    with open(file_path, "w") as f:
+        for node in nodes:
+            f.write(",".join(map(str, node.pos)) + "\n")
+
+
 def export_path(
     pathfinder: PathFinder,
     origin_name: str,
@@ -91,26 +101,47 @@ def export_path(
     origin = DESTINATIONS[origin_name]
     destination = DESTINATIONS[destination_name]
 
-    distance, path = pathfinder.run_alt(nodes, origin, destination, loading_bar=True)
+    distance, path = pathfinder.run_alt(origin, destination)
 
-    with open(export_file_path, "w") as f:
-        for node in path:
-            f.write(",".join(map(str, node.pos)) + "\n")
+    write_coordinates(path, export_file_path)
     print("Path saved!")
 
 
 if __name__ == "__main__":
+    loading_bar = True
     nodes = read_complete(
-        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=True
+        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=loading_bar
     )
-    pathfinder = PathFinder(nodes, True)
-    benchmark_dijkstra(pathfinder, "Tampere", "Stavanger")
-    benchmark_dijkstra(pathfinder, "Trondheim torg", "Trondheim lufthavn, Værnes")
-    benchmark_dijkstra(pathfinder, "Tampere", "Stavanger")
+    pathfinder = PathFinder(nodes, loading_bar)
 
-    to_landmarks, from_landmarks = load_preprocess("preprocess.csv")
+    benchmark_dijkstra(pathfinder, "Tampere", "Ålesund")
+    benchmark_dijkstra(pathfinder, "Kårvåg", "Gjemnes")
+
+    to_landmarks, from_landmarks = load_preprocess("preprocess.csv", loading_bar)
     pathfinder.set_preprocess(to_landmarks, from_landmarks)
-    benchmark_alt(pathfinder, "Trondheim torg", "Trondheim lufthavn, Værnes")
-    benchmark_alt(pathfinder, "Tampere", "Stavanger")
+    benchmark_alt(pathfinder, "Tampere", "Ålesund")
+    benchmark_alt(pathfinder, "Kårvåg", "Gjemnes")
 
     export_path(pathfinder, "Oslo", "Trondheim", "oslo_trondheim.csv")
+
+    charging_stations = pathfinder.closest_n_nodes(
+        DESTINATIONS["Trondheim lufthavn, Værnes"], 8, utils.is_charging_station
+    )
+    write_coordinates(
+        map(lambda n: pathfinder.nodes[n[0]], charging_stations),
+        "charging_stations.csv",
+    )
+
+    drinking_places = pathfinder.closest_n_nodes(
+        DESTINATIONS["Trondheim torg"], 8, utils.is_drinking_place
+    )
+    write_coordinates(
+        map(lambda n: pathfinder.nodes[n[0]], drinking_places), "drinking_places.csv"
+    )
+
+    eating_places = pathfinder.closest_n_nodes(
+        DESTINATIONS["Hemsedal"], 8, utils.is_eating_place
+    )
+    write_coordinates(
+        map(lambda n: pathfinder.nodes[n[0]], charging_stations), "eating_places.csv"
+    )

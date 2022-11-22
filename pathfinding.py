@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 
 from queue import PriorityQueue
-from utils import Preprocess
+from utils import LoadingBarMocker, Preprocess
 from file_handling import read_complete
 from utils import Node, is_gas_station
 
@@ -13,14 +13,6 @@ class DijkstraHeap:
     node_heap: list[int]
     in_heap: list[bool]
     heap_positions: list[int]
-
-
-class LoadingBarMocker:
-    def update(self, i: int):
-        pass
-
-    def close(self):
-        pass
 
 
 class PathFinder:

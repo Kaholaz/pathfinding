@@ -1,5 +1,5 @@
 from typing import TypeVar, cast
-from utils import Node
+from utils import LoadingBarMocker, Node
 from pathfinding import PathFinder
 from file_handling import read_complete
 import pickle
@@ -83,65 +83,45 @@ def load_preprocess(
     preprocess_file_name: str,
     loading_bar: bool = False,
 ) -> tuple[list[list[float | int]], list[list[float | int]]]:
-    if loading_bar:
-        from tqdm import tqdm  # type: ignore
+    with open(preprocess_file_name, "r") as f:
+        fields = f.readline().split()
+        number_of_landmarks = int(fields[0])
+        number_of_nodes = int(fields[1])
 
-        with open(preprocess_file_name, "r") as f:
-            fields = f.readline().split()
-            number_of_landmarks = int(fields[0])
-            number_of_nodes = int(fields[1])
+        to_landmarks: list[list[int | float]] = cast(
+            list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
+        )
+        from_landmarks: list[list[int | float]] = cast(
+            list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
+        )
 
-            to_landmarks: list[list[int | float]] = cast(
-                list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
-            )
-            from_landmarks: list[list[int | float]] = cast(
-                list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
-            )
-            with tqdm(total=number_of_nodes, desc="Reading preprocess...") as bar:
-                while line := f.readline():
-                    fields = line.split()
-                    for i, value in enumerate(
-                        map(
-                            lambda field: float("inf")
-                            if field == "inf"
-                            else int(field),
-                            fields[:number_of_landmarks],
-                        )
-                    ):
-                        to_landmarks[i].append(value)
-                    for i, value in enumerate(
-                        map(
-                            lambda field: float("inf")
-                            if field == "inf"
-                            else int(field),
-                            fields[number_of_landmarks:],
-                        )
-                    ):
-                        from_landmarks[i].append(value)
-                    bar.update(1)
-    else:
-        print("Reading preprocess...")
-        to_landmarks, from_landmarks = list(), list()
-        with open(preprocess_file_name, "r") as f:
-            fields = f.readline().split()
-            number_of_landmarks = int(fields[0])
-            number_of_nodes = int(fields[1])
-            while line := f.readline():
-                fields = line.split()
-                for i, value in enumerate(
-                    map(
-                        lambda field: float("inf") if field == "inf" else int(field),
-                        fields[:number_of_landmarks],
-                    )
-                ):
-                    to_landmarks[i].append(value)
-                for i, value in enumerate(
-                    map(
-                        lambda field: float("inf") if field == "inf" else int(field),
-                        fields[number_of_landmarks:],
-                    )
-                ):
-                    from_landmarks[i].append(value)
+        if loading_bar:
+            from tqdm import tqdm  # type: ignore
+
+            bar = tqdm(total=number_of_nodes, desc="Reading preprocess...")
+        else:
+            print("Reading preprocess...")
+            bar = LoadingBarMocker()
+
+        while line := f.readline():
+            fields = line.split()
+            for i, value in enumerate(
+                map(
+                    lambda field: float("inf") if field == "inf" else int(field),
+                    fields[:number_of_landmarks],
+                )
+            ):
+                to_landmarks[i].append(value)
+            for i, value in enumerate(
+                map(
+                    lambda field: float("inf") if field == "inf" else int(field),
+                    fields[number_of_landmarks:],
+                )
+            ):
+                from_landmarks[i].append(value)
+            bar.update(1)
+
+    bar.close()
 
     return to_landmarks, from_landmarks
 
@@ -159,14 +139,23 @@ def preprocess_and_save(
 
 
 if __name__ == "__main__":
-    pre_result = preprocess_and_save(
+    node_file, edges_file, place_file, preprocess_file = (
         "island_noder.txt",
         "island_kanter.txt",
         "island_interessepkt.txt",
         "island_preprocess.csv",
-        landmarks=ICELAND_LANDMARKS,
-        loading_bar=True,
     )
+    loading_bar = False
+
+    pathfinder = preprocess_and_save(
+        node_file,
+        edges_file,
+        place_file,
+        preprocess_file,
+        landmarks=ICELAND_LANDMARKS,
+        loading_bar=loading_bar,
+    )
+
     print("Reading file...")
-    load_result = load_preprocess("island_preprocess.csv", loading_bar=True)
-    assert pre_result.to_landmarks, pre_result.from_landmarks == load_result
+    load_result = load_preprocess("island_preprocess.csv", loading_bar)
+    assert pathfinder.to_landmarks, pathfinder.from_landmarks == load_result

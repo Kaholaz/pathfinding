@@ -55,13 +55,16 @@ def read_edges(
             while line := f.readline():
                 fields = line.split()
                 values = tuple(map(int, fields[:3]))
-                nodes[values[0]].edges.append((values[1], values[2]))
+                if reverse:
+                    nodes[values[1]].edges.append((values[0], values[2]))
+                else:
+                    nodes[values[0]].edges.append((values[1], values[2]))
     gc.enable()
 
     return nodes
 
 
-def read_place_type(
+def read_place(
     file_name: str, nodes: list[Node], loading_bar: bool = False
 ) -> list[Node]:
     if loading_bar:
@@ -73,14 +76,20 @@ def read_place_type(
         if loading_bar:
             with tqdm(total=entries, desc="Reading place types...") as bar:
                 while line := f.readline():
-                    fields = tuple(map(int, line.split()[:2]))
-                    nodes[fields[0]].type = fields[1]
+                    fields = line.split()
+                    int_fields = tuple(map(int, fields[:2]))
+                    name = fields[-1][1:-1]
+                    nodes[int_fields[0]].type = int_fields[1]
+                    nodes[int_fields[0]].name = name
                     bar.update(1)
         else:
             print("Reading place types...")
             while line := f.readline():
-                fields = tuple(map(int, line.split()[:2]))
-                nodes[fields[0]].type = fields[1]
+                fields = line.split()
+                int_fields = tuple(map(int, fields[:2]))
+                name = fields[-1][1:-1]
+                nodes[int_fields[0]].type = int_fields[1]
+                nodes[int_fields[0]].name = name
     gc.enable()
 
     return nodes
@@ -95,4 +104,4 @@ def read_complete(
 ) -> list[Node]:
     nodes = read_nodes(node_file, loading_bar=loading_bar)
     nodes = read_edges(edges_file, nodes, reverse=reverse, loading_bar=loading_bar)
-    return read_place_type(place_file, nodes, loading_bar=loading_bar)
+    return read_place(place_file, nodes, loading_bar=loading_bar)

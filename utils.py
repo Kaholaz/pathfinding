@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Optional
 
 
 @dataclass
@@ -8,6 +8,15 @@ class Node:
     edges: list[tuple[int, int]]  # node, cost
     pos: tuple[float, float]
     type: int = 0
+    name: Optional[str] = None
+
+
+class LoadingBarMocker:
+    def update(self, i: int):
+        pass
+
+    def close(self):
+        pass
 
 
 Preprocess = list[list[float | int]]
