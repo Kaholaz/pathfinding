@@ -30,13 +30,15 @@ def test_100000_50():
 
 
 if __name__ == "__main__":
+    loading_bar = False
+
     nodes = read_complete(
         "island_noder.txt",
         "island_kanter.txt",
         "island_interessepkt.txt",
-        loading_bar=True,
+        loading_bar=loading_bar
     )
-    pathfinder = PathFinder(nodes, True)
+    pathfinder = PathFinder(nodes, loading_bar)
     test_500_100000()
     _vars = vars().copy()
     for name, value in _vars.items():

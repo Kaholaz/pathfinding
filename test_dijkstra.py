@@ -46,10 +46,12 @@ def test_tampere_stavanger():
 
 
 if __name__ == "__main__":
+    loading_bar = False
+
     nodes = read_complete(
-        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=True
+        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=loading_bar
     )
-    pathfinder = PathFinder(nodes, True)
+    pathfinder = PathFinder(nodes, loading_bar)
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):

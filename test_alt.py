@@ -64,7 +64,7 @@ if __name__ == "__main__":
         "interessepkt.txt",
         "preprocess.csv",
     )
-    loading_bar = True
+    loading_bar = False
 
     if not os.path.exists(preprocess_file):
         pathfinder = preprocess_and_save(
