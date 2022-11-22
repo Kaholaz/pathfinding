@@ -317,6 +317,13 @@ if __name__ == "__main__":
         "island_interessepkt.txt",
         loading_bar=True,
     )
-    print(closest_n_nodes(
-        nodes, 0, 5, is_gas_station, loading_bar=True, loading_desc="Finding closest"
-    ))
+    print(
+        closest_n_nodes(
+            nodes,
+            0,
+            5,
+            is_gas_station,
+            loading_bar=True,
+            loading_desc="Finding closest",
+        )
+    )
