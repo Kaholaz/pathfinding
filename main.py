@@ -108,7 +108,7 @@ def export_path(
 
 
 if __name__ == "__main__":
-    loading_bar = True
+    loading_bar = False
     nodes = read_complete(
         "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=loading_bar
     )
@@ -143,5 +143,5 @@ if __name__ == "__main__":
         DESTINATIONS["Hemsedal"], 8, utils.is_eating_place
     )
     write_coordinates(
-        map(lambda n: pathfinder.nodes[n[0]], charging_stations), "eating_places.csv"
+        map(lambda n: pathfinder.nodes[n[0]], eating_places), "eating_places.csv"
     )
