@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "island_noder.txt",
         "island_kanter.txt",
         "island_interessepkt.txt",
-        loading_bar=loading_bar
+        loading_bar=loading_bar,
     )
     pathfinder = PathFinder(nodes, loading_bar)
     test_500_100000()

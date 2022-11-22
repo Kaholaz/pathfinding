@@ -2,7 +2,7 @@ from typing import TypeVar, cast
 from utils import LoadingBarMocker, Node
 from pathfinding import PathFinder
 from file_handling import read_complete
-import pickle
+import sys
 
 ICELAND_LANDMARKS = {
     5129: "Keflavik",
@@ -139,20 +139,35 @@ def preprocess_and_save(
 
 
 if __name__ == "__main__":
-    node_file, edges_file, place_file, preprocess_file = (
-        "island_noder.txt",
-        "island_kanter.txt",
-        "island_interessepkt.txt",
-        "island_preprocess.csv",
-    )
+
+    files = {
+        "island": (
+            "island_noder.txt",
+            "island_kanter.txt",
+            "island_interessepkt.txt",
+            "island_preprocess.csv",
+        ),
+        "skandinavia": (
+            "noder.txt",
+            "kanter.txt",
+            "interessepkt.txt",
+            "preprocess.csv",
+        ),
+    }
+    landmarks = {"island": ICELAND_LANDMARKS, "skandinavia": SCANDINAVIA_LANDMARKS}
     loading_bar = False
 
+    try:
+        chosen_files = files[sys.argv[1]]
+        chosen_landmarks = landmarks[sys.argv[1]]
+    except Exception:
+        print("You must specify the map you want to process.")
+        print(f"Choices: ({','.join(files.keys())})")
+        sys.exit(1)
+
     pathfinder = preprocess_and_save(
-        node_file,
-        edges_file,
-        place_file,
-        preprocess_file,
-        landmarks=ICELAND_LANDMARKS,
+        *chosen_files,
+        landmarks=chosen_landmarks,
         loading_bar=loading_bar,
     )
 
