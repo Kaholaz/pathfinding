@@ -1,5 +1,5 @@
 from alt_preprocess import load_preprocess
-from pathfinding import run_dijkstra
+from pathfinding import run_alt, run_dijkstra
 from utils import Node, cs_to_hour_min_sec
 from file_handling import read_complete
 
@@ -13,6 +13,8 @@ DESTINATIONS = {
     "Trondheim lufthavn, Værnes": 7172108,
     "Trondheim torg": 4546048,
     "Hemseda": 3509663,
+    "Tampere": 232073,
+    "Stavanger": 4247796,
 }
 
 
@@ -64,9 +66,92 @@ def benchmark_dijkstra(nodes: list[Node], origin_name: str, destination_name: st
     )
 
 
+def benchmark_alt(
+    nodes: list[Node],
+    origin_name: str,
+    destination_name: str,
+    to_landmarks: list[list[float | int]],
+    from_landmarks: list[list[float | int]],
+):
+    origin = DESTINATIONS[origin_name]
+    destination = DESTINATIONS[destination_name]
+
+    start = timer()
+    distance, previous = run_alt(
+        nodes, origin, to_landmarks, from_landmarks, destination, loading_bar=True
+    )
+    end = timer()
+
+    current_node = previous[destination]
+    assert current_node is not None
+
+    previous_nodes_indexes = [current_node]
+    while current_node is not None:
+        previous_nodes_indexes.append(current_node)
+        current_node = previous[current_node]
+    previous_nodes = list(map(lambda n: nodes[n], previous_nodes_indexes))
+
+    print_benchmark_results(
+        distance,
+        previous_nodes,
+        origin_name,
+        destination_name,
+        end - start,
+    )
+
+
+def export_path(
+    nodes: list[Node],
+    origin_name: str,
+    destination_name: str,
+    to_landmarks: list[list[float | int]],
+    from_landmarks: list[list[float | int]],
+    export_file_path: str,
+):
+    origin = DESTINATIONS[origin_name]
+    destination = DESTINATIONS[destination_name]
+
+    start = timer()
+    distance, previous = run_alt(
+        nodes, origin, to_landmarks, from_landmarks, destination, loading_bar=True
+    )
+    end = timer()
+
+    current_node = previous[destination]
+    assert current_node is not None
+
+    previous_nodes_indexes = [current_node]
+    while current_node is not None:
+        previous_nodes_indexes.append(current_node)
+        current_node = previous[current_node]
+
+    previous_nodes = list(map(lambda n: nodes[n], previous_nodes_indexes))
+    tab = "\t"
+
+    with open(export_file_path, "w") as f:
+        for node in previous_nodes[::-1]:
+            f.write(",".join(map(str, node.pos)) + "\n")
+    print("Path saved!")
+
+
 if __name__ == "__main__":
     nodes = read_complete(
         "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=True
     )
-    to_landmarks, from_landmarks = load_preprocess("preprocess.csv")
+    benchmark_dijkstra(nodes, "Tampere", "Stavanger")
     benchmark_dijkstra(nodes, "Trondheim torg", "Trondheim lufthavn, Værnes")
+    benchmark_dijkstra(nodes, "Tampere", "Stavanger")
+
+    to_landmarks, from_landmarks = load_preprocess("preprocess.csv")
+    benchmark_alt(
+        nodes,
+        "Trondheim torg",
+        "Trondheim lufthavn, Værnes",
+        to_landmarks,
+        from_landmarks,
+    )
+    benchmark_alt(nodes, "Tampere", "Stavanger", to_landmarks, from_landmarks)
+
+    export_path(
+        nodes, "Oslo", "Trondheim", to_landmarks, from_landmarks, "oslo_trondheim.csv"
+    )

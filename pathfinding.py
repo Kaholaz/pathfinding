@@ -181,6 +181,7 @@ def run_alt(
 
     # Initializing return lists
     previous: list[Optional[int]] = [None] * number_of_nodes
+    best_distances: list[float | int] = [INFINITY] * number_of_nodes
 
     # Initializing variables
     node_to_goal_estimate: list[float | int] = [INFINITY] * number_of_nodes
@@ -198,6 +199,7 @@ def run_alt(
         to_landmark[origin] - to_landmark[destination] for to_landmark in to_landmarks
     )
     node_to_goal_estimate[origin] = max(0, from_estimate, to_estimate)
+    best_distances[origin] = 0
 
     # Setting initializing heap
     heap: PriorityQueue = PriorityQueue()
@@ -242,21 +244,15 @@ def run_alt(
                     else:
                         estimate = node_to_goal_estimate[target]
 
-                    # Calculate total estimate
+                    # Calculate new distance
                     new_dist = current_dist + cost
-                    new_start_to_goal_estimate = new_dist + estimate
+                    # Check if distance is better
+                    if new_dist < best_distances[target]:
 
-                    # Check if estimate is better
-                    if (
-                        new_start_to_goal_estimate
-                        < start_to_goal_through_node_estimate[target]
-                    ):
                         # If it is, update estimate and place into heap
-                        start_to_goal_through_node_estimate[
-                            target
-                        ] = new_start_to_goal_estimate
+                        best_distances[target] = new_dist
                         previous[target] = current_node
-                        heap.put((node_to_goal_estimate, new_dist, target))
+                        heap.put((new_dist + estimate, new_dist, target))
     else:
         print(loading_desc)
         while not heap.empty():
