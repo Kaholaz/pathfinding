@@ -7,6 +7,7 @@ from alt_preprocess import (
     SCANDINAVIA_LANDMARKS,
 )
 from utils import hour_min_sec_to_sec as seconds
+import os
 
 
 def general_test(
@@ -43,25 +44,33 @@ if __name__ == "__main__":
     global to_landmarks
     global from_landmarks
 
-    # nodes, to_landmarks, from_landmarks = preprocess_and_save(
-    #     "island_noder.txt",
-    #     "island_kanter.txt",
-    #     "island_interessepkt.txt",
-    #     "island_preprocess.csv",
-    #     landmarks=ICELAND_LANDMARKS,
-    #     loading_bar=True,
-    # )
-    nodes = read_complete(
+    node_file, edges_file, place_file, preprocess_file = (
         "island_noder.txt",
         "island_kanter.txt",
         "island_interessepkt.txt",
-        loading_bar=True,
+        "island_preprocess.csv",
     )
-    to_landmarks, from_landmarks = load_preprocess(
-        "island_preprocess.csv", loading_bar=True
-    )
-    pathfinder = PathFinder(nodes, True)
-    pathfinder.set_preprocess(to_landmarks, from_landmarks)
+    loading_bar = True
+
+    if not os.path.exists(preprocess_file):
+        pathfinder = preprocess_and_save(
+            node_file,
+            edges_file,
+            place_file,
+            preprocess_file,
+            landmarks=SCANDINAVIA_LANDMARKS,
+            loading_bar=loading_bar,
+        )
+    else:
+        nodes = read_complete(
+            node_file, edges_file, place_file, loading_bar=loading_bar
+        )
+        pathfinder = PathFinder(nodes, loading_bar)
+        to_landmarks, from_landmarks = load_preprocess(
+            preprocess_file, loading_bar=loading_bar
+        )
+        pathfinder.set_preprocess(to_landmarks, from_landmarks)
+
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):

@@ -20,10 +20,10 @@ SCANDINAVIA_LANDMARKS = {
 
 
 def calculate_distances_from_landmark(
-    pathfinder: PathFinder, landmark: int, landmark_name: str) -> list[float | int]:
+    pathfinder: PathFinder, landmark: int, landmark_name: str
+) -> list[float | int]:
     pathfinder.run_dijkstra(
-        landmark,
-        loading_desc=f"Calculating distances from {landmark_name}..."
+        landmark, loading_desc=f"Calculating distances from {landmark_name}..."
     )
     return pathfinder.best_distances
 
@@ -32,9 +32,7 @@ def distances_from_landmarks(
     pathfinder: PathFinder, landmarks: dict[int, str]
 ) -> list[list[float | int]]:
     return [
-        calculate_distances_from_landmark(
-            pathfinder, landmark, landmark_name
-        )
+        calculate_distances_from_landmark(pathfinder, landmark, landmark_name)
         for landmark, landmark_name in landmarks.items()
     ]
 
@@ -156,9 +154,7 @@ def preprocess_and_save(
     landmarks: dict[int, str],
     loading_bar: bool,
 ) -> PathFinder:
-    pathfinder = preprocess(
-        node_file, edges_file, place_file, landmarks, loading_bar
-    )
+    pathfinder = preprocess(node_file, edges_file, place_file, landmarks, loading_bar)
     return save_preprocess(pathfinder, preprocess_file)
 
 
@@ -172,5 +168,5 @@ if __name__ == "__main__":
         loading_bar=True,
     )
     print("Reading file...")
-    load_result =  load_preprocess("island_preprocess.csv", loading_bar=True)
+    load_result = load_preprocess("island_preprocess.csv", loading_bar=True)
     assert pre_result.to_landmarks, pre_result.from_landmarks == load_result

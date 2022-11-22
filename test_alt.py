@@ -6,6 +6,7 @@ from alt_preprocess import (
     preprocess_and_save,
     SCANDINAVIA_LANDMARKS,
 )
+import os
 from utils import hour_min_sec_to_sec as seconds
 
 
@@ -57,22 +58,33 @@ def test_tampere_stavanger():
 
 if __name__ == "__main__":
     global to_landmarks, from_landmarks
-
-    nodes, to_landmarks, from_landmarks = preprocess_and_save(
-        node_file="noder.txt",
-        edges_file="kanter.txt",
-        place_file="interessepkt.txt",
-        preprocess_file="preprocess.csv",
-        landmarks=SCANDINAVIA_LANDMARKS,
-        loading_bar=True,
+    node_file, edges_file, place_file, preprocess_file = (
+        "noder.txt",
+        "kanter.txt",
+        "interessepkt.txt",
+        "preprocess.csv",
     )
-    nodes = read_complete(
-        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=True
-    )
-    to_landmarks, from_landmarks = load_preprocess("preprocess.csv", loading_bar=True)
+    loading_bar = True
 
-    pathfinder = PathFinder(nodes, True)
-    pathfinder.set_preprocess(to_landmarks, from_landmarks)
+    if not os.path.exists(preprocess_file):
+        pathfinder = preprocess_and_save(
+            node_file,
+            edges_file,
+            place_file,
+            preprocess_file,
+            landmarks=SCANDINAVIA_LANDMARKS,
+            loading_bar=loading_bar,
+        )
+    else:
+        nodes = read_complete(
+            node_file, edges_file, place_file, loading_bar=loading_bar
+        )
+        pathfinder = PathFinder(nodes, loading_bar)
+        to_landmarks, from_landmarks = load_preprocess(
+            preprocess_file, loading_bar=loading_bar
+        )
+        pathfinder.set_preprocess(to_landmarks, from_landmarks)
+
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):
