@@ -72,7 +72,6 @@ def run_dijkstra(
             if destination is not None and destination == current_node:
                 break
 
-            bar.update(1)
             visited[current_node] = True
             for target, cost in nodes[current_node].edges:
                 # No need to account for finished nodes, the cost will always be greater than current best.
@@ -172,8 +171,8 @@ def closest_n_nodes(
 def run_alt(
     nodes: list[Node],
     origin: int,
-    to_landmarks: list[list[int]],
-    from_landmarks: list[list[int]],
+    to_landmarks: list[list[float | int]],
+    from_landmarks: list[list[float | int]],
     destination: int,
     loading_bar: bool = False,
     loading_desc: str = "Running alt...",

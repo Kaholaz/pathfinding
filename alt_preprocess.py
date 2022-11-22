@@ -1,3 +1,4 @@
+from typing import cast
 from utils import Node
 from pathfinding import run_dijkstra
 from file_handling import read_complete
@@ -69,16 +70,84 @@ def save_preprocess(
     from_landmarks: list[list[float | int]],
     preprocess_file_name: str,
 ):
-    with open(preprocess_file_name, "wb") as f:
-        pickle.dump((nodes, to_landmarks, from_landmarks), f, pickle.HIGHEST_PROTOCOL)
+    number_of_landmarks = len(to_landmarks)
+    number_of_nodes = len(to_landmarks[0])
+    tab = "\t"
+    with open(preprocess_file_name, "w") as f:
+        f.write(f"{number_of_landmarks}\t{number_of_nodes}\n")
+        for i in range(number_of_nodes):
+            line = f"\
+{tab.join(map(lambda l: str(l[i]), to_landmarks))}\t\
+{tab.join(map(lambda l: str(l[i]), from_landmarks))}\n"
+            f.write(line)
     return nodes, to_landmarks, from_landmarks
 
 
 def load_preprocess(
     preprocess_file_name: str,
-) -> tuple[list[Node], list[list[int]], list[list[int]]]:
-    with open(preprocess_file_name, "rb") as f:
-        return pickle.load(f)
+    loading_bar: bool = False,
+) -> tuple[list[list[float | int]], list[list[float | int]]]:
+    if loading_bar:
+        from tqdm import tqdm  # type: ignore
+
+        with open(preprocess_file_name, "r") as f:
+            fields = f.readline().split()
+            number_of_landmarks = int(fields[0])
+            number_of_nodes = int(fields[1])
+
+            to_landmarks: list[list[int | float]] = cast(
+                list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
+            )
+            from_landmarks: list[list[int | float]] = cast(
+                list[list[int | float]], [list()[:] for _ in range(number_of_landmarks)]
+            )
+            with tqdm(total=number_of_nodes, desc="Reading preprocess...") as bar:
+                while line := f.readline():
+                    fields = line.split()
+                    for i, value in enumerate(
+                        map(
+                            lambda field: float("inf")
+                            if field == "inf"
+                            else int(field),
+                            fields[:number_of_landmarks],
+                        )
+                    ):
+                        to_landmarks[i].append(value)
+                    for i, value in enumerate(
+                        map(
+                            lambda field: float("inf")
+                            if field == "inf"
+                            else int(field),
+                            fields[number_of_landmarks:],
+                        )
+                    ):
+                        from_landmarks[i].append(value)
+                    bar.update(1)
+    else:
+        print("Reading preprocess...")
+        to_landmarks, from_landmarks = list(), list()
+        with open(preprocess_file_name, "r") as f:
+            fields = f.readline().split()
+            number_of_landmarks = int(fields[0])
+            number_of_nodes = int(fields[1])
+            while line := f.readline():
+                fields = line.split()
+                for i, value in enumerate(
+                    map(
+                        lambda field: float("inf") if field == "inf" else int(field),
+                        fields[:number_of_landmarks],
+                    )
+                ):
+                    to_landmarks[i].append(value)
+                for i, value in enumerate(
+                    map(
+                        lambda field: float("inf") if field == "inf" else int(field),
+                        fields[number_of_landmarks:],
+                    )
+                ):
+                    from_landmarks[i].append(value)
+
+    return to_landmarks, from_landmarks
 
 
 def preprocess_and_save(
@@ -88,7 +157,7 @@ def preprocess_and_save(
     preprocess_file: str,
     landmarks: dict[int, str],
     loading_bar: bool,
-) -> tuple[list[Node], list[list[int]], list[list[int]]]:
+) -> tuple[list[Node], list[list[float | int]], list[list[float | int]]]:
     nodes, to_landmarks, from_landmarks = preprocess(
         node_file, edges_file, place_file, landmarks, loading_bar
     )
@@ -100,9 +169,9 @@ if __name__ == "__main__":
         "noder.txt",
         "kanter.txt",
         "interessepkt.txt",
-        "preprocess.pickle",
+        "preprocess.csv",
         landmarks=SCANDINAVIA_LANDMARKS,
         loading_bar=True,
     )
-    print("Unpickeling")
-    load_preprocess("island_preprocess.pickle")
+    print("Reading file...")
+    load_preprocess("island_preprocess.csv", loading_bar=True)

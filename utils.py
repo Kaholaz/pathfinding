@@ -33,6 +33,12 @@ def is_sleeping_place(node: Node) -> bool:
     return bool(node.type & 32)
 
 
+def write_path_to_file(previous_nodes: list[Node], filename: str):
+    with open(filename, "w") as f:
+        for node in previous_nodes[::-1]:
+            f.write(f"{node.pos[0]},{node.pos[1]}\n")
+
+
 def hour_min_sec_to_cs(hours: int, minutes: int, seconds: int):
     return hour_min_sec_to_sec(hours, minutes, seconds) * 100
 

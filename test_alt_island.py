@@ -42,17 +42,26 @@ def test_100000_50():
 
 
 if __name__ == "__main__":
-    global to_landmarks, from_landmarks
+    global to_landmarks
+    global from_landmarks
 
-    # nodes, to_landmarks, from_landmarks = preprocess_and_save(
-    #     "island_noder.txt",
-    #     "island_kanter.txt",
-    #     "island_interessepkt.txt",
-    #     "island_preprocess.pickle",
-    #     landmarks=ICELAND_LANDMARKS,
-    #     loading_bar=True,
-    # )
-    nodes, to_landmarks, from_landmarks = load_preprocess("island_preprocess.pickle")
+    nodes, to_landmarks, from_landmarks = preprocess_and_save(
+        "island_noder.txt",
+        "island_kanter.txt",
+        "island_interessepkt.txt",
+        "island_preprocess.csv",
+        landmarks=ICELAND_LANDMARKS,
+        loading_bar=True,
+    )
+    nodes = read_complete(
+        "island_noder.txt",
+        "island_kanter.txt",
+        "island_interessepkt.txt",
+        loading_bar=True,
+    )
+    to_landmarks, from_landmarks = load_preprocess(
+        "island_preprocess.csv", loading_bar=True
+    )
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):

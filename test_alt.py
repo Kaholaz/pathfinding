@@ -63,11 +63,14 @@ if __name__ == "__main__":
         node_file="noder.txt",
         edges_file="kanter.txt",
         place_file="interessepkt.txt",
-        preprocess_file="preprocess.pickle",
+        preprocess_file="preprocess.csv",
         landmarks=SCANDINAVIA_LANDMARKS,
         loading_bar=True,
     )
-    # nodes, to_landmarks, from_landmarks = load_preprocess("preprocess.pickle")
+    nodes = read_complete(
+        "noder.txt", "kanter.txt", "interessepkt.txt", loading_bar=True
+    )
+    to_landmarks, from_landmarks = load_preprocess("preprocess.csv", loading_bar=True)
     _vars = vars().copy()
     for name, value in _vars.items():
         if name.startswith("test_"):
