@@ -184,7 +184,7 @@ def run_alt(
     previous: list[Optional[int]] = [None] * number_of_nodes
 
     # Initializing variables
-    node_to_goal_estimate: list[Optional[int]] = [None] * number_of_nodes
+    node_to_goal_estimate: list[float | int] = [INFINITY] * number_of_nodes
     start_to_goal_through_node_estimate: list[int | float] = [
         INFINITY
     ] * number_of_nodes
@@ -226,8 +226,9 @@ def run_alt(
                     if visited[target]:
                         continue
 
+                    estimate: float
                     # Calculate node to goal estimate
-                    if node_to_goal_estimate[target] is None:
+                    if node_to_goal_estimate[target] is INFINITY:
                         from_estimate = max(
                             from_landmark[destination] - from_landmark[target]
                             for from_landmark in from_landmarks
@@ -240,7 +241,7 @@ def run_alt(
                             0, from_estimate, to_estimate
                         )
                     else:
-                        estimate: int = node_to_goal_estimate[target]
+                        estimate = node_to_goal_estimate[target]
 
                     # Calculate total estimate
                     new_dist = current_dist + cost
@@ -275,7 +276,7 @@ def run_alt(
                     continue
 
                 # Calculate node to goal estimate
-                if node_to_goal_estimate[target] is None:
+                if node_to_goal_estimate[target] is INFINITY:
                     from_estimate = max(
                         from_landmark[destination] - from_landmark[target]
                         for from_landmark in from_landmarks
@@ -288,7 +289,7 @@ def run_alt(
                         0, from_estimate, to_estimate
                     )
                 else:
-                    estimate: int = node_to_goal_estimate[target]
+                    estimate = node_to_goal_estimate[target]
 
                 # Calculate total estimate
                 new_dist = current_dist + cost
@@ -316,6 +317,6 @@ if __name__ == "__main__":
         "island_interessepkt.txt",
         loading_bar=True,
     )
-    closest_n_nodes(
+    print(closest_n_nodes(
         nodes, 0, 5, is_gas_station, loading_bar=True, loading_desc="Finding closest"
-    )
+    ))
