@@ -1,6 +1,7 @@
 from typing import Callable, Optional
 
 from queue import PriorityQueue
+from utils import Preprocess
 from file_handling import read_complete
 from utils import Node, is_gas_station
 
@@ -14,311 +15,228 @@ class DijkstraHeap:
     heap_positions: list[int]
 
 
-def run_dijkstra(
-    nodes: list[Node],
-    origin: int,
-    destination: Optional[int] = None,
-    loading_bar: bool = False,
-    loading_desc="Running dijkstra...",
-) -> tuple[list[float | int], list[Optional[int]]]:
-    number_of_nodes = len(nodes)
+class LoadingBarMocker:
+    def update(self, i: int):
+        pass
 
-    # Initializing return lists
-    best_distances: list[float | int] = [INFINITY] * number_of_nodes
-    previous: list[Optional[int]] = [None] * number_of_nodes
+    def close(self):
+        pass
 
-    visited: list[bool] = [False] * number_of_nodes
 
-    # Setting initializing heap
-    best_distances[origin] = 0
-    heap: PriorityQueue = PriorityQueue()
-    heap.put((0, origin))
+class PathFinder:
+    nodes: list[Node]
+    loading_bar: bool
+    current_loading_bar: LoadingBarMocker
 
-    if loading_bar:
-        from tqdm import tqdm  # type: ignore
+    origin: int
+    destination: int
+    considered_nodes: int
+    best_distances: list[int]
+    previous: list[int]
+    visited: list[bool]
+    heap: PriorityQueue
 
-        # Running pathfinder
-        with tqdm(total=len(nodes), desc=loading_desc) as bar:
-            while not heap.empty():
-                current_dist: int
-                current_node: int
-                current_dist, current_node = heap.get()
+    to_landmarks: Preprocess
+    from_landmarks: Preprocess
 
-                if visited[current_node]:
-                    continue
-                if destination is not None and destination == current_node:
-                    break
+    def __init__(self, nodes: list[Node], loading_bar: bool = False) -> None:
+        self.nodes = nodes
+        self.loading_bar = loading_bar
 
-                bar.update(1)
-                visited[current_node] = True
-                for target, cost in nodes[current_node].edges:
-                    # No need to account for finished nodes, the cost will always be greater than current best.
-                    if visited[target]:
-                        continue
+    def reset_common(self):
+        self.origin = None
+        self.destination = None
+        self.current_loading_bar = LoadingBarMocker()
+        self.considered_nodes = 0
+        self.best_distances = [INFINITY] * len(self.nodes)
+        self.previous = [None] * len(self.nodes)
+        self.visited = [False] * len(self.nodes)
+        self.heap = PriorityQueue()
 
-                    new_dist = current_dist + cost
-                    if new_dist < best_distances[target]:
-                        best_distances[target] = new_dist
-                        previous[target] = current_node
-                        heap.put((new_dist, target))
+    def reset_preprocess(self):
+        self.to_landmarks = [[0] * len(self.nodes)]
+        self.from_landmarks = [[0] * len(self.nodes)]
 
-    else:
-        print(loading_desc)
-        while not heap.empty():
-            current_dist, current_node = heap.get()
+    def set_preprocess(
+        self,
+        to_landmarks: list[list[float | int]],
+        from_landmarks: list[list[float | int]],
+    ):
+        self.to_landmarks = to_landmarks
+        self.from_landmarks = from_landmarks
 
-            if visited[current_node]:
+    def find_next_considerations(
+        self, target_predicate: Optional[Callable[[int], bool]] = None
+    ):
+        if target_predicate is None:
+            if self.destination is not None:
+                target_predicate = lambda i: i == self.destination
+            else:
+                target_predicate = lambda i: False
+
+        if self.loading_bar:
+            from tqdm import tqdm
+
+            self.current_loading_bar = tqdm(
+                total=len(self.nodes), desc=self.loading_desc
+            )
+        else:
+            self.current_loading_bar = LoadingBarMocker()
+            if self.loading_desc:
+                print(self.loading_desc)
+
+        while not self.heap.empty():
+            heap_result = self.heap.get()
+            current_distance, current_node = heap_result[-2:]
+
+            if self.visited[current_node]:
                 continue
-            if destination is not None and destination == current_node:
+
+            self.visited[current_node] = True
+            if target_predicate(current_node):
+                yield current_node, current_distance
+
+            if self.loading_bar:
+                self.current_loading_bar.update(1)
+            self.considered_nodes += 1
+            for target, cost in self.nodes[current_node].edges:
+                if self.visited[target]:
+                    continue
+                yield current_node, target, cost + self.best_distances[current_node]
+
+    def get_path(self, destination: int):
+
+        current_node = destination
+        reverse_path = [current_node]
+
+        while (current_node := self.previous[current_node]) is not None:
+            reverse_path.append(current_node)
+
+        return list(map(lambda n: self.nodes[n], reverse_path[::-1]))
+
+    def run_dijkstra(
+        self,
+        origin: int,
+        destination: Optional[int] = None,
+        loading_desc: str = "Running dijkstra...",
+    ) -> tuple[Optional[int], Optional[list[Node]]]:
+        self.reset_common()
+
+        self.loading_desc = loading_desc
+        self.best_distances[origin] = 0
+        self.heap.put((0, origin))
+
+        self.origin, self.destination = origin, destination
+        self.loading_desc = loading_desc
+
+        for consideration in self.find_next_considerations():
+            if len(consideration) == 2:
+                current_node, distance = consideration
+                assert current_node == destination
                 break
+            else:
+                current_node, target, distance = consideration
 
-            visited[current_node] = True
-            for target, cost in nodes[current_node].edges:
-                # No need to account for finished nodes, the cost will always be greater than current best.
-                if visited[target]:
-                    continue
+            if distance < self.best_distances[target]:
+                self.best_distances[target] = distance
+                self.previous[target] = current_node
+                self.heap.put((distance, target))
 
-                new_dist = current_dist + cost
-                if new_dist < best_distances[target]:
-                    best_distances[target] = new_dist
-                    previous[target] = current_node
-                    heap.put((new_dist, target))
+        if self.loading_bar:
+            self.current_loading_bar.close()
 
-    return best_distances, previous
+        if destination is None:
+            return None, None
+        else:
+            return self.best_distances[destination], self.get_path(destination)
 
+    def closest_n_nodes(
+        self,
+        origin: int,
+        n: int,
+        predicate: Callable[[Node], bool],
+        loading_desc: str = "Finding n closest...",
+    ) -> list[tuple[Node, int]]:
+        self.reset_common()
 
-def closest_n_nodes(
-    nodes: list[Node],
-    origin: int,
-    n: int,
-    filter: Callable[[Node], bool],
-    loading_bar: bool = False,
-    loading_desc="Finding closest n nodes...",
-) -> list[tuple[Node, float | int]]:
-    number_of_nodes = len(nodes)
+        self.best_distances[origin] = 0
+        self.heap.put((0, origin))
 
-    # Initializing return lists
-    best_distances: list[float | int] = [INFINITY] * number_of_nodes
-    previous: list[Optional[int]] = [None] * number_of_nodes
+        self.origin = origin
+        self.loading_desc = loading_desc
+        found_nodes: list[Node] = list()
 
-    visited: list[bool] = [False] * number_of_nodes
-
-    # Setting initializing heap
-    best_distances[origin] = 0
-    heap: PriorityQueue = PriorityQueue()
-    heap.put((0, origin))
-
-    found: list[int] = list()
-    if loading_bar:
-        from tqdm import tqdm  # type: ignore
-
-        # Running pathfinder
-        with tqdm(total=len(nodes), desc=loading_desc) as bar:
-            while not heap.empty():
-                current_dist: int
-                current_node: int
-                current_dist, current_node = heap.get()
-
-                if visited[current_node]:
-                    continue
-                if filter(nodes[current_node]):
-                    found.append(current_node)
-                    if len(found) == n:
-                        break
-
-                bar.update(1)
-                visited[current_node] = True
-                for target, cost in nodes[current_node].edges:
-                    # No need to account for finished nodes, the cost will always be greater than current best.
-                    if visited[target]:
-                        continue
-
-                    new_dist = current_dist + cost
-                    if new_dist < best_distances[target]:
-                        best_distances[target] = new_dist
-                        previous[target] = current_node
-                        heap.put((new_dist, target))
-    else:
-        print(loading_desc)
-        while not heap.empty():
-            current_dist, current_node = heap.get()
-
-            if visited[current_node]:
-                continue
-            if filter(nodes[current_node]):
-                found.append(current_node)
-                if len(found) == n:
+        for consideration in self.find_next_considerations(
+            lambda n: predicate(self.nodes[n])
+        ):
+            if len(consideration) == 2:
+                current_node, distance = consideration
+                assert predicate(self.nodes[current_node])
+                found_nodes.append((current_node, distance))
+                if len(found_nodes) == n:
                     break
-
-            bar.update(1)
-            visited[current_node] = True
-            for target, cost in nodes[current_node].edges:
-                # No need to account for finished nodes, the cost will always be greater than current best.
-                if visited[target]:
-                    continue
-
-                new_dist = current_dist + cost
-                if new_dist < best_distances[target]:
-                    best_distances[target] = new_dist
-                    previous[target] = current_node
-                    heap.put((new_dist, target))
-
-    return list(
-        zip(map(lambda n: nodes[n], found), map(lambda n: best_distances[n], found))
-    )
-
-
-def run_alt(
-    nodes: list[Node],
-    origin: int,
-    to_landmarks: list[list[float | int]],
-    from_landmarks: list[list[float | int]],
-    destination: int,
-    loading_bar: bool = False,
-    loading_desc: str = "Running alt...",
-) -> tuple[float | int, list[Optional[int]]]:
-    number_of_nodes = len(nodes)
-
-    # Initializing return lists
-    previous: list[Optional[int]] = [None] * number_of_nodes
-    best_distances: list[float | int] = [INFINITY] * number_of_nodes
-
-    # Initializing variables
-    node_to_goal_estimate: list[float | int] = [INFINITY] * number_of_nodes
-    start_to_goal_through_node_estimate: list[int | float] = [
-        INFINITY
-    ] * number_of_nodes
-    visited: list[bool] = [False] * number_of_nodes
-
-    # Finding estimate for origin
-    from_estimate = max(
-        from_landmark[destination] - from_landmark[origin]
-        for from_landmark in from_landmarks
-    )
-    to_estimate = max(
-        to_landmark[origin] - to_landmark[destination] for to_landmark in to_landmarks
-    )
-    node_to_goal_estimate[origin] = max(0, from_estimate, to_estimate)
-    best_distances[origin] = 0
-
-    # Setting initializing heap
-    heap: PriorityQueue = PriorityQueue()
-    heap.put((node_to_goal_estimate[origin], 0, origin))
-
-    if loading_bar:
-        from tqdm import tqdm  # type: ignore
-
-        # Running pathfinder
-        with tqdm(total=len(nodes), desc=loading_desc) as bar:
-            while not heap.empty():
-                current_dist: int
-                current_node: int
-                _, current_dist, current_node = heap.get()
-
-                if visited[current_node]:
-                    continue
-                if current_node == destination:
-                    break
-
-                bar.update(1)
-                visited[current_node] = True
-                for target, cost in nodes[current_node].edges:
-                    # No need to account for finished nodes, the cost will always be greater than current best.
-                    if visited[target]:
-                        continue
-
-                    estimate: float
-                    # Calculate node to goal estimate
-                    if node_to_goal_estimate[target] is INFINITY:
-                        from_estimate = max(
-                            from_landmark[destination] - from_landmark[target]
-                            for from_landmark in from_landmarks
-                        )
-                        to_estimate = max(
-                            to_landmark[target] - to_landmark[destination]
-                            for to_landmark in to_landmarks
-                        )
-                        estimate = node_to_goal_estimate[target] = max(
-                            0, from_estimate, to_estimate
-                        )
-                    else:
-                        estimate = node_to_goal_estimate[target]
-
-                    # Calculate new distance
-                    new_dist = current_dist + cost
-                    # Check if distance is better
-                    if new_dist < best_distances[target]:
-
-                        # If it is, update estimate and place into heap
-                        best_distances[target] = new_dist
-                        previous[target] = current_node
-                        heap.put((new_dist + estimate, new_dist, target))
-    else:
-        print(loading_desc)
-        while not heap.empty():
-            _, current_dist, current_node = heap.get()
-
-            if visited[current_node]:
                 continue
-            if current_node == destination:
+            else:
+                current_node, target, distance = consideration
+
+                if distance < self.best_distances[target]:
+                    self.best_distances[target] = distance
+                    self.previous[target] = current_node
+                    self.heap.put((distance, target))
+
+        if self.loading_bar:
+            self.current_loading_bar.close()
+        return found_nodes
+
+    def run_alt(
+        self,
+        origin,
+        destination,
+        to_landmarks: Optional[Preprocess] = None,
+        from_landmarks: Optional[Preprocess] = None,
+        loading_desc: str = "Running alt...",
+    ) -> tuple[float | int, list[Node]]:
+        if to_landmarks is not None:
+            self.to_landmarks = to_landmarks
+        if from_landmarks is not None:
+            self.from_landmarks = from_landmarks
+
+        self.reset_common()
+
+        self.best_distances[origin] = 0
+        self.heap.put((0, origin))
+        node_to_goal_estimate: list[float | int] = [INFINITY] * len(self.nodes)
+
+        self.origin, self.destination = origin, destination
+        self.loading_desc = loading_desc
+
+        for consideration in self.find_next_considerations():
+            if len(consideration) == 2:
+                current_node, distance = consideration
+                assert current_node == destination
                 break
+            else:
+                current_node, target, distance = consideration
 
-            bar.update(1)
-            visited[current_node] = True
-            for target, cost in nodes[current_node].edges:
-                # No need to account for finished nodes, the cost will always be greater than current best.
-                if visited[target]:
-                    continue
+            # Calculate node to goal estimate
+            if node_to_goal_estimate[target] is INFINITY:
+                from_estimate = max(
+                    from_landmark[destination] - from_landmark[target]
+                    for from_landmark in self.from_landmarks
+                )
+                to_estimate = max(
+                    to_landmark[target] - to_landmark[destination]
+                    for to_landmark in self.to_landmarks
+                )
+                node_to_goal_estimate[target] = max(0, from_estimate, to_estimate)
 
-                # Calculate node to goal estimate
-                if node_to_goal_estimate[target] is INFINITY:
-                    from_estimate = max(
-                        from_landmark[destination] - from_landmark[target]
-                        for from_landmark in from_landmarks
-                    )
-                    to_estimate = max(
-                        to_landmark[target] - to_landmark[destination]
-                        for to_landmark in to_landmarks
-                    )
-                    estimate = node_to_goal_estimate[target] = max(
-                        0, from_estimate, to_estimate
-                    )
-                else:
-                    estimate = node_to_goal_estimate[target]
+            if distance < self.best_distances[target]:
+                self.best_distances[target] = distance
+                self.previous[target] = current_node
+                self.heap.put(
+                    (distance + node_to_goal_estimate[target], distance, target)
+                )
 
-                # Calculate total estimate
-                new_dist = current_dist + cost
-                new_start_to_goal_estimate = new_dist + estimate
-
-                # Check if estimate is better
-                if (
-                    new_start_to_goal_estimate
-                    < start_to_goal_through_node_estimate[target]
-                ):
-                    # If it is, update estimate and place into heap
-                    start_to_goal_through_node_estimate[
-                        target
-                    ] = new_start_to_goal_estimate
-                    previous[target] = current_node
-                    heap.put((node_to_goal_estimate, new_dist, target))
-
-    return current_dist, previous
-
-
-if __name__ == "__main__":
-    nodes = read_complete(
-        "island_noder.txt",
-        "island_kanter.txt",
-        "island_interessepkt.txt",
-        loading_bar=True,
-    )
-    print(
-        closest_n_nodes(
-            nodes,
-            0,
-            5,
-            is_gas_station,
-            loading_bar=True,
-            loading_desc="Finding closest",
-        )
-    )
+        if self.loading_bar:
+            self.current_loading_bar.close()
+        return (self.best_distances[destination], self.get_path(destination))

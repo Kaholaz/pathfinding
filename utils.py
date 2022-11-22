@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import TypeVar
 
 
 @dataclass
@@ -7,6 +8,9 @@ class Node:
     edges: list[tuple[int, int]]  # node, cost
     pos: tuple[float, float]
     type: int = 0
+
+
+Preprocess = list[list[float | int]]
 
 
 def is_placename(node: Node) -> bool:
